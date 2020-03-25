@@ -25,13 +25,37 @@ unsigned int VTtresh = 10;
 unsigned int PPtresh = 5;
 
 //---------------------------------------------------------------
+// PYTHON VARIABLES
+//---------------------------------------------------------------
 
-String value;
+unsigned int ALARM = 0;
+
+// send value * 10!!!
+unsigned int BPM = 0;
+// Breaths per minute
+unsigned int VOL = 0;
+// volume
+unsigned int TRIG = 0;
+// trigger
+unsigned int PRES = 0;
+// pressure
+
+//---------------------------------------------------------------
+// SERIAL MONITOR VARIABLES
+//---------------------------------------------------------------
+
+String value0;
+String value1;
 const byte numChars = 32;
-char receivedChars[numChars];
-boolean newData = false;
+char receivedChars0[numChars];
+char receivedChars1[numChars];
+boolean newData0 = false;
+boolean newData1 = false;
+unsigned long lastWatchdogTime = millis();
+unsigned long Watchdog = 3000; // 3 seconds watchdog
 
-
+//---------------------------------------------------------------
+// SETUP
 //---------------------------------------------------------------
  
 void setup()
@@ -43,24 +67,54 @@ void setup()
   Serial.begin(115200);
   Serial1.begin(115200);
   Serial.println("Setup done");
+
+  while(newData1 == 0 ){
+      recvWithEndMarkerSer1();
+      if (newData1 == true){
+        processSerialPort(receivedChars1);
+        newData1 = false;
+      }
+
+      Serial.print("RR");
+      Serial.println(RR);
+  }
+
 }
- 
+
+//---------------------------------------------------------------
+// LOOP
+//---------------------------------------------------------------
+
 void loop()
 {
+  // Handle uart send to PC
+  recvWithEndMarkerSer0();
+  if (newData0 == true){
+    lastWatchdogTime = millis();
+    processPython(receivedChars0);
+    newData0 = false;
+  }
+  if (ALARM != 1){
+    // SOUND BUZZER
+    // COMMUNICATE TO SCREEN
+  }
+  doWatchdog();
+  sendDataToPython();
+  
+  
   // Handle uart receive from display module
-  recvWithEndMarker();
-  if (newData == true){
-    processSerialPort(receivedChars);
-    newData = false;
+  recvWithEndMarkerSer1();
+  if (newData1 == true){
+    processSerialPort(receivedChars1);
+    newData1 = false;
   }
   
-  // Handle uart send to PC
-  
-
   // Control motors
   delay(20);
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// PID
 // ---------------------------------------------------------------------------------------------------------
  
 void controller()
@@ -72,44 +126,70 @@ void controller()
 // ---------------------------------------------------------------------------------------------------------
 
 void processSerialPort(String input){
-  value = getValue(input, '=', 1);
-  //Serial.println(value);
+  value1 = getvalue(input, '=', 1);
+  //Serial.println(value1);
   
   if (input.startsWith("PKtresh")){
-    PKtresh = value.toInt(); // update value
+    PKtresh = value1.toInt(); // update value1
   }
   else if (input.startsWith("VTtresh")){
-    VTtresh = value.toInt(); // update value
+    VTtresh = value1.toInt(); // update value1
   }
   else if (input.startsWith("PPtresh")){
-    PPtresh = value.toInt(); // update value
+    PPtresh = value1.toInt(); // update value1
   }
   else if (input.startsWith("Mode")){
-    Mode = value.toInt(); // update value
+    Mode = value1.toInt(); // update value1
   }
   else if (input.startsWith("PP")){
-    PP = value.toInt(); // update value
+    PP = value1.toInt(); // update value1
   }
   else if (input.startsWith("IE")){
-    IE = value.toFloat(); // update value
+    IE = value1.toFloat(); // update value1
 //    Serial.print("new IE: ");
 //    Serial.println(IE);
   }
   else if (input.startsWith("TS")){
-    TS = value.toInt(); // update value
+    TS = value1.toInt(); // update value1
   }
   else if (input.startsWith("PK")){
-    PK = value.toInt(); // update value
+    PK = value1.toInt(); // update value1
   }
   else if (input.startsWith("VT")){
-    VT = value.toInt(); // update value
+    VT = value1.toInt(); // update value1
   }  
   else if (input.startsWith("RR")){
-    RR = value.toInt(); // update value
+    RR = value1.toInt(); // update value1
   }
 }
 
-String getValue(String data, char separator, int index)
+void processPython(String input){
+  value0 = getvalue(input, '=', 1); 
+  if (input.startsWith("ALARM")){
+    ALARM = value0.toInt(); // update value1
+  }
+}
+
+void doWatchdog(void){
+  if (millis() - lastWatchdogTime > Watchdog){
+    ALARM = 5;
+  }
+  Serial.print("ALARM=");
+  Serial.println(ALARM);
+}
+
+void sendDataToPython(){
+  Serial.print("BPM=");
+  Serial.println(BPM*10);
+  Serial.print("VOL=");
+  Serial.println(VOL*10);
+  Serial.print("TRIG=");
+  Serial.println(TRIG*10);
+  Serial.print("PRES=");
+  Serial.println(PRES*10);
+}
+
+String getvalue(String data, char separator, int index)
 {
     int found = 0;
     int strIndex[] = { 0, -1 };
@@ -125,26 +205,50 @@ String getValue(String data, char separator, int index)
     return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-void recvWithEndMarker() {
+void recvWithEndMarkerSer0() {
    static byte ndx = 0;
    char endMarker = '\n';
    char rc;
    
-   while (Serial1.available() > 0 && newData == false) {
-     rc = Serial1.read();
+   while (Serial.available() > 0 && newData0 == false) {
+     rc = Serial.read();
     
      if (rc != endMarker) {
-       receivedChars[ndx] = rc;
+       receivedChars0[ndx] = rc;
        ndx++;
        if (ndx >= numChars) {
          ndx = numChars - 1;
        }
      }
      else {
-       receivedChars[ndx] = '\0'; // terminate the string
+       receivedChars0[ndx] = '\0'; // terminate the string
        ndx = 0;
-       newData = true;
-       Serial.println(receivedChars);
+       newData0 = true;
+       Serial.println(receivedChars0);
+     }
+   }
+}
+
+void recvWithEndMarkerSer1() {
+   static byte ndx = 0;
+   char endMarker = '\n';
+   char rc;
+   
+   while (Serial1.available() > 0 && newData1 == false) {
+     rc = Serial1.read();
+    
+     if (rc != endMarker) {
+       receivedChars1[ndx] = rc;
+       ndx++;
+       if (ndx >= numChars) {
+         ndx = numChars - 1;
+       }
+     }
+     else {
+       receivedChars1[ndx] = '\0'; // terminate the string
+       ndx = 0;
+       newData1 = true;
+       Serial.println(receivedChars1);
      }
    }
 }
