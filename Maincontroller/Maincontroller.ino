@@ -68,16 +68,7 @@ void setup()
   Serial1.begin(115200);
   Serial.println("Setup done");
 
-  while(newData1 == 0 ){
-      recvWithEndMarkerSer1();
-      if (newData1 == true){
-        processSerialPort(receivedChars1);
-        newData1 = false;
-      }
-
-      Serial.print("RR");
-      Serial.println(RR);
-  }
+  // @ startup: get values from other arduino
 
 }
 
