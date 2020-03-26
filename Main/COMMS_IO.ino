@@ -20,10 +20,44 @@ unsigned int PP = 0;
 //PEEP Pressure = Max pressure to deliver
 bool Mode = false; //false = Pressure
 //Mode
+bool ACTIVE = false;
+// active: start or stop
 
 unsigned int PKtresh = 10;
 unsigned int VTtresh = 10;
 unsigned int PPtresh = 5;
+
+unsigned int comms_getRR(){
+  return RR;
+}
+
+unsigned int comms_getVT(){
+  return VT;
+}
+
+unsigned int comms_getPK(){
+  return PK;
+}
+
+unsigned int comms_getTS(){
+  return TS;
+}
+
+float comms_getIE(){
+  return IE; 
+}
+
+unsigned int comms_getPP(){
+  return PP;
+}
+
+bool comms_getMode(){
+  return Mode;
+}
+
+bool comms_getActive(){
+  return ACTIVE;
+}
 
 //---------------------------------------------------------------
 // PYTHON VARIABLES
