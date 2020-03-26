@@ -6,15 +6,15 @@
 //---------------------------------------------------------------
 
 // define bytes to send
-unsigned int RR = 20; 
+unsigned int RR = 10; 
 // Number of breaths per minute setting
-unsigned int VT = 0;
+unsigned int VT = 700;
 // Tidal volume= target to deliver
 unsigned int PK = 50;
 //Peak pressure
 unsigned int TS = 0; // TODO
 // Breath Trigger Sensitivity = amount the machine should look for
-float IE = 0.3;
+float IE = 0.5;
 // Inspiration-expiration rate
 unsigned int PP = 0; // NOT USED
 //PEEP Pressure = Max pressure to deliver
@@ -88,7 +88,7 @@ unsigned int PRES = 40;
 // pressure
 
 void comms_setBPM(unsigned long bpm_time){
-  BPM = 1/(float)bpm_time;
+  BPM = 60000/(float)bpm_time;
 }
 void comms_setVOL(unsigned int vol){
   VOL = vol;
