@@ -8,30 +8,26 @@
 #define ENDSWITCH_PUSH_PIN 2
 
 //---------------------------------------------------------------
-// SERIAL MONITOR VARIABLES
+// VARIABLES
 //---------------------------------------------------------------
 
-unsigned long lastWatchdogTime = millis();
+unsigned long controllerTime = 20000; // us
 unsigned long Watchdog = 3000; // 3 seconds watchdog
 
-volatile unsigned long exhaleStartTime = millis();
+unsigned long lastWatchdogTime = millis();
 
 volatile float CurrentPressurePatient = 0;
 volatile float Flow2Patient = 0;
 volatile unsigned int angle = 0;
 
-int duty =122;         //pwm 122 equals zero speed
-
 typedef enum {ini = 0x00, wait = 0x01, inhale = 0x02, exhale = 0x03} controller_state_t;
 controller_state_t controller_state = 0x00;
 
-// CONTROLLER VARIABLES
-
-unsigned long current_time_pressure;
-unsigned long start_time_pressure;
-unsigned long inhale_start_time;
-bool time_pressure_reached=0;
-unsigned long time_diff = 1;
+volatile unsigned long exhale_start_time = millis();
+volatile unsigned long start_time_pressure;
+volatile unsigned long inhale_start_time;
+volatile bool time_pressure_reached=0;
+volatile unsigned long time_diff = 1;
 float Speed; 
 
 float target_risetime = 300;            // init at low time, set in loop below
@@ -56,6 +52,7 @@ void setup()
   else {
     Serial.println("FLOW SENSOR Failed");
   }
+  setDeltaT(controllerTime);
   
   //-- set up BME
   Serial.println("Setting up BME sensor: ");
@@ -83,7 +80,7 @@ void setup()
 
   //-- set up interrupt
   pinMode(13, OUTPUT);
-  Timer3.initialize(20000);         // initialize timer3 in us, set 100 ms timing
+  Timer3.initialize(controllerTime);   // initialize timer3 in us, set 100 ms timing
   Timer3.attachInterrupt(controller);  // attaches callback() as a timer overflow interrupt
 
   //-- setup done
@@ -110,15 +107,11 @@ void loop()
   // Handle uart receive from display module
   recvWithEndMarkerSer1();
 
-  // Control motors
   delay(20);
-
-//  Serial.println(controller_state);
 
 //  Serial.println(angle);
   Serial.println(Flow2Patient);
 //  Serial.println(CurrentPressurePatient);
-
 
 }
 
@@ -176,7 +169,7 @@ void controller()
     case wait: 
       MOTOR_CONTROL_setValue(0);
       // Restart when 1) inhalation detected OR 2) timer passed
-      if (((millis() - exhaleStartTime) > target_inhale_time)){// || CurrentPressurePatient < 0.2){ // TODO: replace true by underpressure
+      if (((millis() - exhale_start_time) > target_inhale_time)){// || CurrentPressurePatient < 0.2){ // TODO: replace true by underpressure
         controller_state = inhale;
         // Get values for plotting
         comms_setBPM(millis() - inhale_start_time);
