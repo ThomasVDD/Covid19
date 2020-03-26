@@ -103,7 +103,7 @@ controller_state_t BREATHE_setToEXHALE(int end_switch,bool time_pressure_reached
     unsigned long time_diff = current_time-previous_exhale_time;
     bpm = 60000.0/time_diff;
     previous_exhale_time = current_time;
-    exhaleStartTime = millis();
+    exhale_start_time = millis();
     return exhale;
   } 
   else{

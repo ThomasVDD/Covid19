@@ -1,6 +1,10 @@
 #include <Wire.h>
 #include "sdpsensor.h"
 bool IS_FLOW_SENSOR_INITIALIZED = false;
+float Volume;
+float totalFlow = 0;
+unsigned long numberoftriggers = 0;
+unsigned long deltaT;
 //----------------------------------------------------------------------------------------------------------------
 // SDP3x on the default I2C address of 0x21:
 SDP3XSensor sdp;
@@ -72,4 +76,30 @@ bool FLOW_SENSOR_Measure(float* value)
     return true; 
   } 
   return false;
+}
+
+void resetVolume(){
+  Volume = 0;
+  totalFlow = 0;
+  numberoftriggers = 0;
+}
+
+void updateVolume(float flow){ //flow = liter/min
+  totalFlow += flow;
+  numberoftriggers += 1;
+}
+
+float getTotalVolume(){
+  Volume = totalFlow * ((float)deltaT / 60000) * numberoftriggers;
+  return Volume;
+}
+
+int getTotalVolumeInt(){
+  int intVolume = (int)Volume;
+  return intVolume;
+}
+
+// set time interval
+void setDeltaT(unsigned long deltat){
+  deltaT = deltat/1000;
 }

@@ -36,20 +36,35 @@ int SDPSensor::init()
   const uint8_t CMD_LEN = 2;
   uint8_t cmd0[CMD_LEN] = { 0x36, 0x7C };
   uint8_t cmd1[CMD_LEN] = { 0xE1, 0x02 };
+  uint8_t cmd4[CMD_LEN] = { 0x06 };
 
   const uint8_t DATA_LEN = 18;
   uint8_t data[DATA_LEN] = { 0 };
 
-  uint8_t ret = I2CHelper::i2c_write(mI2CAddress, cmd0, CMD_LEN);
+  // THOMASVDD: soft reset at start
+  uint8_t ret = I2CHelper::i2c_write(0x00, cmd4, 1);
   if (ret != 0) {
+    Serial.println("reset failed");
+    return 5;
+  }
+
+  delay(50); // sensor takes time to reset
+
+  ret = I2CHelper::i2c_write(mI2CAddress, cmd0, CMD_LEN);
+  if (ret != 0) {
+    Serial.println("1 fail");
     return 1;
   }
   ret = I2CHelper::i2c_write(mI2CAddress, cmd1, CMD_LEN);
   if (ret != 0) {
+    
+    Serial.println("2 fail");
     return 2;
   }
   ret = I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN);
   if (ret != 0) {
+    
+    Serial.println("3 fail");
     return 3;
   }
 
@@ -57,8 +72,8 @@ int SDPSensor::init()
   uint8_t cmd2[CMD_LEN] = { 0x36, 0x15 };
   ret = I2CHelper::i2c_write(mI2CAddress, cmd2, CMD_LEN);
   if (ret != 0) {
+    Serial.println("cont meas setup failed");
     return 4;
-    Serial.println("init failed");
   }
 
   // at this point, we don't really care about the data just yet, but
