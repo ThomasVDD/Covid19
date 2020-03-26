@@ -37,6 +37,8 @@ bool PRESSURE_SENSOR1_INITIALIZED = false;
 bool PRESSURE_SENSOR2_INITIALIZED = false;
 bool PRESSURE_SENSOR3_INITIALIZED = false;
 
+float PRESSURE_INIT_VALUE = 0;
+
 Adafruit_MPL3115A2 redundant = Adafruit_MPL3115A2();
 
 #define hPa2cmh2o_scale 1.0197442889221
@@ -90,6 +92,16 @@ bool BME280_Setup()
           Adafruit_BME280::STANDBY_MS_0_5);
     }
     */
+    float current_value;
+    float sum = 0;
+    for(int i=0;i<50;i++)
+    {
+      BME280_readPressurePatient(&current_value);
+      sum+=current_value;
+      //Serial.println (CurrentPressurePatient);
+    }
+    PRESSURE_INIT_VALUE = sum/50;
+    
     return true;
 }
 //-----------------------------------------------------------------------------------------------
@@ -139,7 +151,7 @@ bool BME280_readPressurePatient(float *value)
       return true;
     }
     return false;*/
-    *value=sensor1-1044.60;
+    *value=sensor1-PRESSURE_INIT_VALUE;
     return true;
 }
 //-----------------------------------------------------------------------------------------------
