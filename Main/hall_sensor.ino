@@ -33,3 +33,13 @@ unsigned int HALL_SENSOR_read()
   return 0;
 }
 //-----------------------------------------------------------------------------------------------------------
+bool HALL_SENSOR_readHall(unsigned int *value) 
+{
+    if (HALL_SENSOR_INITIALIZED){
+      *value = hall_encoder.read();
+      return 1;
+    }
+    else{
+      return 0;
+    }
+}

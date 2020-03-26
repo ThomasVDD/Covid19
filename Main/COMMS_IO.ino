@@ -6,7 +6,7 @@
 //---------------------------------------------------------------
 
 // define bytes to send
-unsigned int RR = 0;
+unsigned int RR = 3000; // TODO: change from millis back to RR
 // Number of breaths per minute setting
 unsigned int VT = 0;
 // Tidal volume= target to deliver
@@ -20,7 +20,7 @@ unsigned int PP = 0;
 //PEEP Pressure = Max pressure to deliver
 bool Mode = false; //false = Pressure
 //Mode
-bool ACTIVE = false;
+bool ACTIVE = true;
 // active: start or stop
 
 unsigned int PKtresh = 10;
@@ -227,7 +227,9 @@ void recvWithEndMarkerSer1() {
 
 void setAlarmState(int alarm){
   if (alarm >= ALARM){ // don't overwrite alarm with 0 if alarm state exists!
-    ALARM = alarm;
+    if (alarm >= ALARM){
+      ALARM = alarm;
+    }
   }
 }
 

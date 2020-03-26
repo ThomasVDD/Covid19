@@ -1,8 +1,11 @@
 #include "TimerThree.h"
 
 // for debuggin purposes: allows to turn off features
-#define PYTHON 1
+#define PYTHON 0
 #define HARDWARE 1
+
+#define ENDSIWTCH_FULL_PIN 3 //inhale
+#define ENDSWITCH_PUSH_PIN 2
 
 //---------------------------------------------------------------
 // SERIAL MONITOR VARIABLES
@@ -15,10 +18,28 @@ volatile unsigned long exhaleStartTime = millis();
 
 volatile float CurrentPressurePatient = 0;
 volatile float Flow2Patient = 0;
-volatile float angle = 0;
+volatile unsigned int angle = 0;
+
+int duty =122;         //pwm 122 equals zero speed
 
 typedef enum {ini = 0x00, wait = 0x01, inhale = 0x02, exhale = 0x03} controller_state_t;
 controller_state_t controller_state = 0x00;
+
+// CONTROLLER VARIABLES
+
+unsigned long current_time_pressure;
+unsigned long start_time_pressure;
+unsigned long new_time;
+bool time_pressure_reached=0;
+unsigned long time_diff = 1;
+float Speed; 
+
+float target_inhale_exhale_ratio = 0.3; // init at long time, set in loop below
+float target_resp_rate = 10;          // init at long time, set in loop below
+float target_duration = 1000.0 * 60.0 * target_inhale_exhale_ratio / target_resp_rate  ;           // init at long time, set in loop below
+float target_pressure = 20;              // init at low pressure, set in loop below
+float target_risetime = 300;            // init at low time, set in loop below
+unsigned long target_duration_int = (unsigned long) target_duration;
 
 //---------------------------------------------------------------
 // SETUP
@@ -39,15 +60,32 @@ void setup()
   }
   
   //-- set up BME
-//  while (!BME280_Setup()) // must start, if not, do not continue
-//  {
-//    delay(100);
-//  }
-//  Serial.println("BME OK");
+  Serial.println("Setting up BME sensor: ");
+  while (!BME280_Setup()) // must start, if not, do not continue
+  {
+    delay(100);
+  }
+  Serial.println("BME OK");
+
+  //-- set up hall sensor
+  Serial.println("Setting up HALL sensor: ");
+  if (HALL_SENSOR_INIT()) {
+    Serial.println("HALL SENSOR OK");
+  }
+  else {
+    Serial.println("HALL SENSOR Failed");
+  }
+
+  //-- set up limit switches
+  pinMode(ENDSIWTCH_FULL_PIN,INPUT_PULLUP);
+  pinMode(ENDSWITCH_PUSH_PIN,INPUT_PULLUP);
+
+  //-- set up motor
+  MOTOR_CONTROL_setp();
 
   //-- set up interrupt
   pinMode(13, OUTPUT);
-  Timer3.initialize(150000);         // initialize timer3 in us, set 100 ms timing
+  Timer3.initialize(20000);         // initialize timer3 in us, set 100 ms timing
   Timer3.attachInterrupt(controller);  // attaches callback() as a timer overflow interrupt
 
   //-- setup done
@@ -77,9 +115,11 @@ void loop()
   // Control motors
   delay(20);
 
-  Serial.println(angle);
-  Serial.println(Flow2Patient);
-  Serial.println(CurrentPressurePatient);
+  Serial.println(controller_state);
+
+//  Serial.println(angle);
+//  Serial.println(Flow2Patient);
+//  Serial.println(CurrentPressurePatient);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -90,9 +130,12 @@ void controller()
 {
   // readout sensors
   interrupts();
-  bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
+  //bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
   bool isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
+  bool isAngleOK = HALL_SENSOR_readHall(&angle);
   noInterrupts();
+  int END_SWITCH_VALUE_STOP = digitalRead(ENDSIWTCH_FULL_PIN); //inhale
+  int END_SWITCH_VALUE_START = digitalRead(ENDSWITCH_PUSH_PIN);
 
   switch (controller_state) {
     case ini:
@@ -102,40 +145,59 @@ void controller()
       }
       break;
     case inhale: 
-      // load 'new' setting values for controlle
-
-// CALL PID for inhale
-
-      controller_state = exhale;
+      // CALL PID for inhale
+      BREATHE_setCurrentTime(new_time);
+      BREATHE_CONTROL_setPointInhalePressure(target_pressure, target_risetime);
+      BREATHE_CONTROL_setInhalePressure(CurrentPressurePatient);
+      // update motor
+      Speed = BREATHE_CONTROL_Regulate(); 
+      MOTOR_CONTROL_setValue(Speed);
+      // check if end of inhale is reached
+      current_time_pressure = millis();
+      if ((current_time_pressure-start_time_pressure)>target_duration_int){
+        time_pressure_reached=1;
+          // Get values for plotting
+          //comms_setBPM(BREATHE_CONTROL_getRespirationRatio)
+          //comms_setVOL
+          //comms_setTRIG
+          //comms_setPRES
+      }
+      // check if we need to change state 
+      controller_state = BREATHE_setToEXHALE(END_SWITCH_VALUE_STOP,time_pressure_reached);      
       break;
-    case exhale: // Stuur motor naar startpositie
-      // Get values for plotting
-//      comms_setBPM(BREATHE_CONTROL_getRespirationRatio)
-//comms_setVOL
-//comms_setTRIG
-//comms_setPRES
+    case exhale: 
+      // Motor to start position
+      Speed = BREATHE_CONTROL_Regulate(); 
+      MOTOR_CONTROL_setValue(Speed);
+      // check if motor has returned
+      controller_state = BREATHE_setToWAIT(END_SWITCH_VALUE_START);
+     
       // Check alarm ==> setAlarm() in PID!
-      //
       if (getAlarmState() != 0) {
         // SOUND BUZZER
         // COMMUNICATE TO SCREEN
       }
-      exhaleStartTime = millis();
-      controller_state = wait;
       break;
     case wait: 
+      MOTOR_CONTROL_setValue(0);
+//      Serial.println(CurrentPressurePatient);
       // Restart when 1) inhalation detected OR 2) timer passed
-      if ((millis() - exhaleStartTime > comms_getTS()) || true){ // TODO: replace true by underpressure
+      if (((millis() - exhaleStartTime) > comms_getRR()) && true){ // TODO: replace true by underpressure
         controller_state = inhale;
+        new_time = millis();
+        start_time_pressure = millis();
+        time_pressure_reached=0;
+      // load 'new' setting values for controller
 //      BREATHE_CONTROL_setTIDALVolume(comms_getVT());
 //      BREATHE_CONTROL_setPEAKPressure(comms_getPK());
 //      BREATHE_CONTROL_setBreathingSensitivity(comms_getTS());
-//      BREATHE_CONTROL_setRespirationRatio(comms_getRR());
+//      BREATHE_CONTROL_setRespirationRatio(comms_getRR()); 
       }
       // Check user input to stop controller
       if (comms_getActive() == false) { 
         controller_state = ini; // stop controller
       }
+      break;
     default: controller_state = wait;
   }
 }
