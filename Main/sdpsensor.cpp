@@ -53,20 +53,20 @@ int SDPSensor::init()
     return 3;
   }
 
+  // THOMASVDD: SET TO CONTINUOUS MEASURE
+  uint8_t cmd2[CMD_LEN] = { 0x36, 0x15 };
+  ret = I2CHelper::i2c_write(mI2CAddress, cmd2, CMD_LEN);
+  if (ret != 0) {
+    return 4;
+    Serial.println("init failed");
+  }
+
   // at this point, we don't really care about the data just yet, but
   // we may use that in the future. Either way, the sensor responds, and
   return 0;
 }
 
-void SDPSensor::initcont(){
-  const uint8_t CMD_LEN = 2;
-  uint8_t cmd[CMD_LEN] = { 0x36, 0x1E };
-
-  if (I2CHelper::i2c_write(mI2CAddress, cmd, CMD_LEN) != 0) {
-    return 1;
-  }
-}
-
+// THOMASVDD: CONTINUOUS MEASURE
 int SDPSensor::readcont(){
   const uint8_t DATA_LEN = 9;
   uint8_t data[DATA_LEN] = { 0 };

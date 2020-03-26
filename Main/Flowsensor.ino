@@ -31,17 +31,13 @@ bool FLOW_SENSOR_INIT()
   {
     return false; // init failed;
   }  
-//  delay(100);
-//  sdp.initcont();
-//  delay(100);
 }
 //----------------------------------------------------------------------------------------------------------------
 bool FLOW_SENSOR_Measure(float* value)
 {
   if (IS_FLOW_SENSOR_INITIALIZED)
   {
-    int ret = sdp.readSample();
-//    int ret = sdp.readcont();
+    int ret = sdp.readcont();
     float DP;
     if (ret == 0) 
     {    

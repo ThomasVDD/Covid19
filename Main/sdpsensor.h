@@ -52,8 +52,7 @@ public:
    */
   int readSample();
 
-  void initcont();
-
+  // THOMASVDD: CONTINUOUS MEASURE
   int readcont();
 
   /**

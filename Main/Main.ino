@@ -116,8 +116,10 @@ void loop()
 //  Serial.println(controller_state);
 
 //  Serial.println(angle);
-//  Serial.println(Flow2Patient);
+  Serial.println(Flow2Patient);
 //  Serial.println(CurrentPressurePatient);
+
+
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -128,7 +130,7 @@ void controller()
 {
   // readout sensors
   interrupts();
-//  bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
+  bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
   bool isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
   bool isAngleOK = HALL_SENSOR_readHall(&angle);
   comms_setVOL(Flow2Patient);
