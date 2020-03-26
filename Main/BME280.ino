@@ -17,7 +17,7 @@
  ***************************************************************************/
 #include <Wire.h>
 #include <SPI.h>
-#include "Adafruit_BME280.h"
+#include <Adafruit_BME280.h>
 #include <Adafruit_MPL3115A2.h>
 #include <Adafruit_BMP280.h>
 
@@ -43,7 +43,7 @@ Adafruit_MPL3115A2 redundant = Adafruit_MPL3115A2();
 //-----------------------------------------------------------------------------------------------
 bool BME280_Setup() 
 {
-    if (!bmp1.begin(0x76))
+    if (!bmp1.begin(0x77))
     {   
         Serial.println("BMP280 sensor 1 not found"); 
         return false;        

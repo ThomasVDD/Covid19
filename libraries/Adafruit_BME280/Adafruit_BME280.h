@@ -24,7 +24,6 @@
 #include "Arduino.h"
 
 #include <Adafruit_Sensor.h>
-
 #include <SPI.h>
 #include <Wire.h>
 
