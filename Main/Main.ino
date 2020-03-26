@@ -29,14 +29,15 @@ void setup()
 void loop()
 {
   // Handle uart send to PC
+  sendDataToPython();
+  // Handle uart receive from PC
   recvWithEndMarkerSer0();
-
+  // Check alarm and watchdog
+  doWatchdog();
   if (getAlarmState != 1){
     // SOUND BUZZER
     // COMMUNICATE TO SCREEN
   }
-//  doWatchdog();
-//  sendDataToPython();
   
   // Handle uart receive from display module
   recvWithEndMarkerSer1();

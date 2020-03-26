@@ -129,9 +129,7 @@ void processSerialPort(String input){
     PP = value1.toInt(); // update value1
   }
   else if (input.startsWith("IE")){
-    IE = value1.toFloat(); // update value1
-//    Serial.print("new IE: ");
-//    Serial.println(IE);
+    IE = value1.toFloat(); // update value
   }
   else if (input.startsWith("TS")){
     TS = value1.toInt(); // update value1
