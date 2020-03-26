@@ -66,14 +66,27 @@ bool comms_getActive(){
 unsigned int ALARM = 0;
 
 // send value * 10!!!
-unsigned int BPM = 0;
+unsigned int BPM = 10;
 // Breaths per minute
-unsigned int VOL = 0;
+unsigned int VOL = 20;
 // volume
-unsigned int TRIG = 0;
+unsigned int TRIG = 30;
 // trigger
-unsigned int PRES = 0;
+unsigned int PRES = 40;
 // pressure
+
+void comms_setBPM(unsigned int bpm){
+  BPM = bpm;
+}
+void comms_setVOL(unsigned int vol){
+  VOL = vol;
+}
+void comms_setTRIG(unsigned int trig){
+  TRIG = trig;
+}
+void comms_setPRES(unsigned int pres){
+  PRES = pres;
+}
 
 //---------------------------------------------------------------
 // SERIAL MONITOR VARIABLES
@@ -94,7 +107,7 @@ boolean newData0 = false;
 void processPython(String input){
   value0 = getvalue(input, '=', 1); 
   if (input.startsWith("ALARM")){
-    ALARM = value0.toInt(); // update value1
+    setAlarmState(value0.toInt());
   }
 }
 
@@ -213,7 +226,9 @@ void recvWithEndMarkerSer1() {
 //---------------------------------------------------------------
 
 void setAlarmState(int alarm){
-  ALARM = alarm;
+  if (alarm >= ALARM){ // don't overwrite alarm with 0 if alarm state exists!
+    ALARM = alarm;
+  }
 }
 
 int getAlarmState(void){

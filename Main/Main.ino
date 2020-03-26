@@ -1,5 +1,9 @@
 #include "TimerThree.h"
 
+// for debuggin purposes: allows to turn off features
+#define PYTHON 1
+#define HARDWARE 1
+
 //---------------------------------------------------------------
 // SERIAL MONITOR VARIABLES
 //---------------------------------------------------------------
@@ -23,6 +27,7 @@ void setup()
 {
   Serial.begin(115200);
   Serial1.begin(115200);
+  
   //--- set up flow sensors here, if init fails, we can continue
   Serial.print("Setting up flow sensor: ");
   if (FLOW_SENSOR_INIT()) {
@@ -31,19 +36,20 @@ void setup()
   else {
     Serial.println("FLOW SENSOR Failed");
   }
+  
   //-- set up BME
-  while (!BME280_Setup()) // must start, if not, do not continue
-  {
-    delay(100);
-  }
-  Serial.println("BME OK");
+//  while (!BME280_Setup()) // must start, if not, do not continue
+//  {
+//    delay(100);
+//  }
+//  Serial.println("BME OK");
 
-  // interrupt
+  //-- set up interrupt
   pinMode(13, OUTPUT);
   Timer3.initialize(150000);         // initialize timer3 in us, set 100 ms timing
   Timer3.attachInterrupt(controller);  // attaches callback() as a timer overflow interrupt
 
-
+  //-- setup done
   Serial.println("Setup done");
 }
 
@@ -54,12 +60,12 @@ void setup()
 void loop()
 {
   // Handle uart send to PC
-  //  sendDataToPython();
+  if (PYTHON) sendDataToPython();
   // Handle uart receive from PC
   recvWithEndMarkerSer0();
   // Check alarm and watchdog
-  //  doWatchdog();
-  if (getAlarmState != 1) {
+  if (PYTHON) doWatchdog();
+  if (getAlarmState() != 0) {
     // SOUND BUZZER
     // COMMUNICATE TO SCREEN
   }
@@ -75,7 +81,7 @@ void loop()
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// PID
+// STATE MACHINE
 // ---------------------------------------------------------------------------------------------------------
 
 void controller()
@@ -93,28 +99,35 @@ void controller()
         controller_state = wait; // start controller
       }
       break;
-    case inhale: //code van de jongens rechts van ons
-      // 1 keer tot einde gaan (geen exhale)
+    case inhale: 
       // load 'new' setting values for controller
 //      BREATHE_CONTROL_setTIDALVolume(comms_getVT());
 //      BREATHE_CONTROL_setPEAKPressure(comms_getPK());
 //      BREATHE_CONTROL_setBreathingSensitivity(comms_getTS());
 //      BREATHE_CONTROL_setRespirationRatio(comms_getRR());
+
+// CALL PID for inhale
+
       controller_state = exhale;
       break;
     case exhale: // Stuur motor naar startpositie
+      // Get values for plotting
+//      comms_setBPM(BREATHE_CONTROL_getRespirationRatio)
+//comms_setVOL
+//comms_setTRIG
+//comms_setPRES
+      // Check alarm ==> setAlarm() in PID!
       //
-      // Check alarm
-      //
-      //if(alarm){
-      //  sound alarm;
-      //}
+      if (getAlarmState() != 0) {
+        // SOUND BUZZER
+        // COMMUNICATE TO SCREEN
+      }
       exhaleStartTime = millis();
       controller_state = wait;
       break;
     case wait: 
       // Restart when 1) inhalation detected OR 2) timer passed
-      if ((millis() - exhaleStartTime > comms_getTS() || true){ // TODO: replace true by underpressure
+      if ((millis() - exhaleStartTime > comms_getTS()) || true){ // TODO: replace true by underpressure
         controller_state = inhale;
       }
       // Check user input to stop controller
@@ -123,9 +136,6 @@ void controller()
       }
     default: controller_state = wait;
   }
-
-
-
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -133,6 +143,7 @@ void controller()
 void doWatchdog(void) {
   if (millis() - lastWatchdogTime > Watchdog) {
     setAlarmState(5);
+    digitalWrite(13, HIGH);
   }
   Serial.print("ALARM=");
   Serial.println(getAlarmState());
