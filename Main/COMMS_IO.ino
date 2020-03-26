@@ -8,7 +8,7 @@
 // define bytes to send
 unsigned int RR = 20; 
 // Number of breaths per minute setting
-unsigned int VT = 0; // TODO
+unsigned int VT = 0;
 // Tidal volume= target to deliver
 unsigned int PK = 50;
 //Peak pressure

@@ -31,7 +31,8 @@ volatile unsigned long time_diff = 1;
 float Speed; 
 
 float target_risetime = 300;            // init at low time, set in loop below
-unsigned target_pressure = 20; 
+unsigned int target_pressure = 20; 
+unsigned int target_volume = 700;
 unsigned int target_inhale_time = 0;
 unsigned int target_exhale_time = 0;
 
@@ -56,11 +57,11 @@ void setup()
   
   //-- set up BME
   Serial.println("Setting up BME sensor: ");
-  while (!BME280_Setup()) // must start, if not, do not continue
-  {
-    delay(100);
-  }
-  Serial.println("BME OK");
+//  while (!BME280_Setup()) // must start, if not, do not continue
+//  {
+//    delay(100);
+//  }
+//  Serial.println("BME OK");
 
   //-- set up hall sensor
   Serial.println("Setting up HALL sensor: ");
@@ -112,7 +113,6 @@ void loop()
 //  Serial.println(angle);
   Serial.println(Flow2Patient);
 //  Serial.println(CurrentPressurePatient);
-
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -124,6 +124,7 @@ void controller()
   // readout sensors
   interrupts();
   bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
+  updateVolume(Flow2Patient);
   bool isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
   bool isAngleOK = HALL_SENSOR_readHall(&angle);
   comms_setVOL(Flow2Patient);
@@ -149,6 +150,10 @@ void controller()
       MOTOR_CONTROL_setValue(Speed);
       // check if end of inhale is reached
       if ((millis()-start_time_pressure)> target_inhale_time){
+        time_pressure_reached=1;
+      }
+      // check if max volume is reached
+      if (getTotalVolumeInt() > target_volume){
         time_pressure_reached=1;
       }
       // check if we need to change state 
@@ -179,11 +184,13 @@ void controller()
         start_time_pressure = millis();
         time_pressure_reached=0;
 
+        resetVolume();
+
         // load 'new' setting values for controller
         target_inhale_time = comms_getInhaleTime();
         target_exhale_time = comms_getExhaleTime();
         target_pressure = comms_getPK();
-//      BREATHE_CONTROL_setTIDALVolume(comms_getVT());
+        target_volume = comms_getVT();
       }
       // Check user input to stop controller
       if (comms_getActive() == false) { 
