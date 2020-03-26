@@ -15,7 +15,6 @@ volatile unsigned long exhaleStartTime = millis();
 
 volatile float CurrentPressurePatient = 0;
 volatile float Flow2Patient = 0;
-volatile float angle = 0;
 
 typedef enum {ini = 0x00, wait = 0x01, inhale = 0x02, exhale = 0x03} controller_state_t;
 controller_state_t controller_state = 0x00;
@@ -77,7 +76,6 @@ void loop()
   // Control motors
   delay(20);
 
-  Serial.println(angle);
   Serial.println(Flow2Patient);
   Serial.println(CurrentPressurePatient);
 }
@@ -102,7 +100,11 @@ void controller()
       }
       break;
     case inhale: 
-      // load 'new' setting values for controlle
+      // load 'new' setting values for controller
+//      BREATHE_CONTROL_setTIDALVolume(comms_getVT());
+//      BREATHE_CONTROL_setPEAKPressure(comms_getPK());
+//      BREATHE_CONTROL_setBreathingSensitivity(comms_getTS());
+//      BREATHE_CONTROL_setRespirationRatio(comms_getRR());
 
 // CALL PID for inhale
 
@@ -127,10 +129,6 @@ void controller()
       // Restart when 1) inhalation detected OR 2) timer passed
       if ((millis() - exhaleStartTime > comms_getTS()) || true){ // TODO: replace true by underpressure
         controller_state = inhale;
-//      BREATHE_CONTROL_setTIDALVolume(comms_getVT());
-//      BREATHE_CONTROL_setPEAKPressure(comms_getPK());
-//      BREATHE_CONTROL_setBreathingSensitivity(comms_getTS());
-//      BREATHE_CONTROL_setRespirationRatio(comms_getRR());
       }
       // Check user input to stop controller
       if (comms_getActive() == false) { 
