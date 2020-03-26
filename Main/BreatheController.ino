@@ -85,12 +85,6 @@ void BREATHE_setCurrentTime(unsigned long t)
 {
   current_time = t;
 }
-//------------------------------------------------------------------------------
-float BREATHE_getBPM()
-{
-  return bpm;
-}
-
                   
 //------------------------------------------------------------------------------
 controller_state_t BREATHE_setToEXHALE(int end_switch,bool time_pressure_reached)
@@ -110,20 +104,7 @@ controller_state_t BREATHE_setToEXHALE(int end_switch,bool time_pressure_reached
     return inhale;
   }
 }
-//------------------------------------------------------------------------------
-controller_state_t BREATHE_setToINHALE(int end_switch)
-{  
-    if (end_switch==1)
-    {
-      start_time_pressure = millis();  
-      time_pressure_reached=0;
-      return wait;
-    }  
-    else{
-      return exhale;
-    }  
-}
-//------------------------------------------------------------------------------
+
 
 //------------------------------------------------------------------------------
 controller_state_t BREATHE_setToWAIT(int end_switch)
