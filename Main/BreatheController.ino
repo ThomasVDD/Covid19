@@ -12,7 +12,7 @@ bool is_blocking = false;
 
 float MAX_DISPLACEMENT=500;
 float offset = 250;
-float exhale_speed = 50;
+float exhale_speed = 80;
 
 unsigned long current_time = 0;
 unsigned long previous_exhale_time = 0;
@@ -20,7 +20,7 @@ float bpm = 0;
 float delta_time;
 
 //----------------------------------
-float Kp = 25;
+float Kp = 250;
 float Ki = 0;
 float Kd = 0.018;
 float r = 0.5;  // forgetting factor for D-action

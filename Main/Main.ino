@@ -11,7 +11,7 @@
 // VARIABLES
 //---------------------------------------------------------------
 
-unsigned long controllerTime = 20000; // us
+unsigned long controllerTime = 10000; // us
 unsigned long Watchdog = 3000; // 3 seconds watchdog
 
 unsigned long lastWatchdogTime = millis();
@@ -30,7 +30,7 @@ volatile bool time_pressure_reached=0;
 volatile unsigned long time_diff = 1;
 float Speed; 
 
-float target_risetime = 300;            // init at low time, set in loop below
+float target_risetime = 1000;            // init at low time, set in loop below
 unsigned int target_pressure = 20; 
 unsigned int target_volume = 700;
 unsigned int target_inhale_time = 0;
@@ -44,7 +44,7 @@ void setup()
 {
   Serial.begin(115200);
   Serial1.begin(115200);
-  
+
   //--- set up flow sensors here, if init fails, we can continue
   Serial.print("Setting up flow sensor: ");
   if (FLOW_SENSOR_INIT()) {
@@ -57,11 +57,11 @@ void setup()
   
   //-- set up BME
   Serial.println("Setting up BME sensor: ");
-//  while (!BME280_Setup()) // must start, if not, do not continue
-//  {
-//    delay(100);
-//  }
-//  Serial.println("BME OK");
+  while (!BME280_Setup()) // must start, if not, do not continue
+  {
+    delay(100);
+  }
+  Serial.println("BME OK");
 
   //-- set up hall sensor
   Serial.println("Setting up HALL sensor: ");
@@ -108,11 +108,13 @@ void loop()
   // Handle uart receive from display module
   recvWithEndMarkerSer1();
 
-  delay(20);
+  delay(200);
 
 //  Serial.println(angle);
-  Serial.println(Flow2Patient);
+//  Serial.println(Flow2Patient);
+//  Serial.println(abs(getTotalVolumeInt()));
 //  Serial.println(CurrentPressurePatient);
+
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -127,20 +129,20 @@ void controller()
   updateVolume(Flow2Patient);
   bool isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
   bool isAngleOK = HALL_SENSOR_readHall(&angle);
-  comms_setVOL(Flow2Patient);
-  comms_setPRES(CurrentPressurePatient);
+  comms_setVOL(Flow2Patient<0?0:Flow2Patient);
+  comms_setPRES(CurrentPressurePatient<0?0:CurrentPressurePatient);
   noInterrupts();
   int END_SWITCH_VALUE_STOP = digitalRead(ENDSIWTCH_FULL_PIN); //inhale
   int END_SWITCH_VALUE_START = digitalRead(ENDSWITCH_PUSH_PIN);
 
   switch (controller_state) {
-    case ini:
+    case ini:{
       // Check user input to start controller
       if (comms_getActive() == true) {
         controller_state = wait; // start controller
       }
-      break;
-    case inhale: 
+    }break;
+    case inhale:{ 
       // CALL PID for inhale
       BREATHE_setCurrentTime(inhale_start_time);
       BREATHE_CONTROL_setPointInhalePressure(target_pressure, target_risetime);
@@ -149,17 +151,17 @@ void controller()
       Speed = BREATHE_CONTROL_Regulate(); 
       MOTOR_CONTROL_setValue(Speed);
       // check if end of inhale is reached
-      if ((millis()-start_time_pressure)> target_inhale_time){
+      if ((millis()-inhale_start_time) > target_inhale_time){
         time_pressure_reached=1;
       }
       // check if max volume is reached
-      if (getTotalVolumeInt() > target_volume){
+      if (abs(getTotalVolumeInt()) > abs(target_volume)){
         time_pressure_reached=1;
       }
       // check if we need to change state 
       controller_state = BREATHE_setToEXHALE(END_SWITCH_VALUE_STOP,time_pressure_reached);      
-      break;
-    case exhale: 
+    }break;
+    case exhale: {
       // Motor to start position
       Speed = BREATHE_CONTROL_Regulate(); 
       MOTOR_CONTROL_setValue(Speed);
@@ -170,11 +172,11 @@ void controller()
         // SOUND BUZZER
         // COMMUNICATE TO SCREEN
       }
-      break;
-    case wait: 
+    }break;
+    case wait: {
       MOTOR_CONTROL_setValue(0);
       // Restart when 1) inhalation detected OR 2) timer passed
-      if (((millis() - exhale_start_time) > target_inhale_time)){// || CurrentPressurePatient < 0.2){ // TODO: replace true by underpressure
+      if (((millis() - exhale_start_time) > target_exhale_time)){// || CurrentPressurePatient < 0.2){ // TODO: replace true by underpressure
         controller_state = inhale;
         // Get values for plotting
         comms_setBPM(millis() - inhale_start_time);
@@ -196,7 +198,7 @@ void controller()
       if (comms_getActive() == false) { 
         controller_state = ini; // stop controller
       }
-      break;
+    }break;
     default: controller_state = wait;
   }
 }
