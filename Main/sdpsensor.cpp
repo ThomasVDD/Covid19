@@ -70,7 +70,7 @@ int SDPSensor::readSample()
     return 1;
   }
 
-  delay(100); // theoretically 45ms
+  delay(45); // theoretically 45ms
 
   if (I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN) != 0) {
     return 1;
