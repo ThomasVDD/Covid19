@@ -90,11 +90,12 @@ void updateVolume(float flow){ //flow = liter/min
 }
 
 float getTotalVolume(){ // Volume = ml
-  Volume = totalFlow * ((float)deltaT / 60) * numberoftriggers;
+  Volume = totalFlow * ((float)deltaT / 6000) * numberoftriggers;
   return Volume;
 }
 
 int getTotalVolumeInt(){
+  getTotalVolume();
   int intVolume = (int)Volume;
   return intVolume;
 }
