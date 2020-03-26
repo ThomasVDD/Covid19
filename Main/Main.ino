@@ -2,7 +2,6 @@
 
 // for debuggin purposes: allows to turn off features
 #define PYTHON 0
-#define HARDWARE 1
 
 #define ENDSIWTCH_FULL_PIN 3 //inhale
 #define ENDSWITCH_PUSH_PIN 2
@@ -57,11 +56,12 @@ void setup()
   
   //-- set up BME
   Serial.println("Setting up BME sensor: ");
-  while (!BME280_Setup()) // must start, if not, do not continue
-  {
-    delay(100);
+  if (BME280_Setup()){
+    Serial.println("BME OK");
   }
-  Serial.println("BME OK");
+  else{
+    Serial.println("BME Failed");
+  }
 
   //-- set up hall sensor
   Serial.println("Setting up HALL sensor: ");
