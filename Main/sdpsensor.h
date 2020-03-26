@@ -52,6 +52,10 @@ public:
    */
   int readSample();
 
+  void initcont();
+
+  int readcont();
+
   /**
    * Returns the last differential pressure value read - does NOT trigger a new measurement
    * @return last differential pressure value read

@@ -31,6 +31,9 @@ bool FLOW_SENSOR_INIT()
   {
     return false; // init failed;
   }  
+//  delay(100);
+//  sdp.initcont();
+//  delay(100);
 }
 //----------------------------------------------------------------------------------------------------------------
 bool FLOW_SENSOR_Measure(float* value)
@@ -38,6 +41,7 @@ bool FLOW_SENSOR_Measure(float* value)
   if (IS_FLOW_SENSOR_INITIALIZED)
   {
     int ret = sdp.readSample();
+//    int ret = sdp.readcont();
     float DP;
     if (ret == 0) 
     {    
@@ -73,42 +77,3 @@ bool FLOW_SENSOR_Measure(float* value)
   } 
   return false;
 }
-/*void loop()
-{
-  int ret = sdp.readSample();
-  if (ret == 0) {
-    Serial.print("Differential pressure: ");
-    DP = (sdp.getDifferentialPressure());
-    Serial.print(DP);
-  } else {
-    Serial.print("Error in readSample(), ret = ");
-    Serial.println(ret);
-  }
-  if(DP<0){
-    neg = true;
-  }
-  else{
-    neg = false;
-  }
-  double x = abs(DP);
-  double y, x0, x1, y0, y1;
-  for (int i = 0; i < sizeof(DP_vs_SLM) / (sizeof(DP_vs_SLM[0][0]) * 2); i++)
-  {
-    if (x >= DP_vs_SLM[i][0] && x <= DP_vs_SLM[i + 1][0])
-    {
-      y0 = DP_vs_SLM[i][1];  //lower bound
-      y1 = DP_vs_SLM[i + 1][1]; //upper bound
-      x0 = DP_vs_SLM[i][0];
-      x1 = DP_vs_SLM[i + 1][0];
-      if(neg==false){
-        y = abs(y0 + abs(abs((abs(x) - x0)) * ((y1 - y0) / (x1 - x0))));
-      }
-      else{
-        y = -(y0 + abs(abs((abs(x) - x0)) * ((y1 - y0) / (x1 - x0))));
-      }
-    }
-  }
-  Serial.println("Drive Current : ");
-  Serial.println(y);
-  
-}*/

@@ -6,19 +6,19 @@
 //---------------------------------------------------------------
 
 // define bytes to send
-unsigned int RR = 3000; // TODO: change from millis back to RR
+unsigned int RR = 20; 
 // Number of breaths per minute setting
-unsigned int VT = 0;
+unsigned int VT = 0; // TODO
 // Tidal volume= target to deliver
 unsigned int PK = 50;
 //Peak pressure
-unsigned int TS = 0;
+unsigned int TS = 0; // TODO
 // Breath Trigger Sensitivity = amount the machine should look for
-float IE = 0;
+float IE = 0.3;
 // Inspiration-expiration rate
-unsigned int PP = 0;
+unsigned int PP = 0; // NOT USED
 //PEEP Pressure = Max pressure to deliver
-bool Mode = false; //false = Pressure
+bool Mode = false; //false = Pressure // TODO
 //Mode
 bool ACTIVE = true;
 // active: start or stop
@@ -26,6 +26,18 @@ bool ACTIVE = true;
 unsigned int PKtresh = 10;
 unsigned int VTtresh = 10;
 unsigned int PPtresh = 5;
+
+unsigned long comms_getInhaleTime(){
+  float target_inhale_duration = 1000.0 * 60.0 * IE / RR  ;   
+  unsigned long target_inhale_duration_int = (unsigned long) target_inhale_duration;
+  return target_inhale_duration_int;
+}
+
+unsigned long comms_getExhaleTime(){
+  float target_exhale_duration = 1000.0 * 60.0 * (1-IE) / RR  ;   
+  unsigned long target_exhale_duration_int = (unsigned long) target_exhale_duration;
+  return target_exhale_duration_int;
+}
 
 unsigned int comms_getRR(){
   return RR;
@@ -75,8 +87,8 @@ unsigned int TRIG = 30;
 unsigned int PRES = 40;
 // pressure
 
-void comms_setBPM(unsigned int bpm){
-  BPM = bpm;
+void comms_setBPM(unsigned long bpm_time){
+  BPM = 1/(float)bpm_time;
 }
 void comms_setVOL(unsigned int vol){
   VOL = vol;

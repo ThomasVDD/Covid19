@@ -29,17 +29,15 @@ controller_state_t controller_state = 0x00;
 
 unsigned long current_time_pressure;
 unsigned long start_time_pressure;
-unsigned long new_time;
+unsigned long inhale_start_time;
 bool time_pressure_reached=0;
 unsigned long time_diff = 1;
 float Speed; 
 
-float target_inhale_exhale_ratio = 0.3; // init at long time, set in loop below
-float target_resp_rate = 10;          // init at long time, set in loop below
-float target_duration = 1000.0 * 60.0 * target_inhale_exhale_ratio / target_resp_rate  ;           // init at long time, set in loop below
-float target_pressure = 20;              // init at low pressure, set in loop below
 float target_risetime = 300;            // init at low time, set in loop below
-unsigned long target_duration_int = (unsigned long) target_duration;
+unsigned target_pressure = 20; 
+unsigned int target_inhale_time = 0;
+unsigned int target_exhale_time = 0;
 
 //---------------------------------------------------------------
 // SETUP
@@ -115,7 +113,7 @@ void loop()
   // Control motors
   delay(20);
 
-  Serial.println(controller_state);
+//  Serial.println(controller_state);
 
 //  Serial.println(angle);
 //  Serial.println(Flow2Patient);
@@ -130,9 +128,11 @@ void controller()
 {
   // readout sensors
   interrupts();
-  //bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
+//  bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
   bool isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
   bool isAngleOK = HALL_SENSOR_readHall(&angle);
+  comms_setVOL(Flow2Patient);
+  comms_setPRES(CurrentPressurePatient);
   noInterrupts();
   int END_SWITCH_VALUE_STOP = digitalRead(ENDSIWTCH_FULL_PIN); //inhale
   int END_SWITCH_VALUE_START = digitalRead(ENDSWITCH_PUSH_PIN);
@@ -146,21 +146,15 @@ void controller()
       break;
     case inhale: 
       // CALL PID for inhale
-      BREATHE_setCurrentTime(new_time);
+      BREATHE_setCurrentTime(inhale_start_time);
       BREATHE_CONTROL_setPointInhalePressure(target_pressure, target_risetime);
       BREATHE_CONTROL_setInhalePressure(CurrentPressurePatient);
       // update motor
       Speed = BREATHE_CONTROL_Regulate(); 
       MOTOR_CONTROL_setValue(Speed);
       // check if end of inhale is reached
-      current_time_pressure = millis();
-      if ((current_time_pressure-start_time_pressure)>target_duration_int){
+      if ((millis()-start_time_pressure)> target_inhale_time){
         time_pressure_reached=1;
-          // Get values for plotting
-          //comms_setBPM(BREATHE_CONTROL_getRespirationRatio)
-          //comms_setVOL
-          //comms_setTRIG
-          //comms_setPRES
       }
       // check if we need to change state 
       controller_state = BREATHE_setToEXHALE(END_SWITCH_VALUE_STOP,time_pressure_reached);      
@@ -171,7 +165,6 @@ void controller()
       MOTOR_CONTROL_setValue(Speed);
       // check if motor has returned
       controller_state = BREATHE_setToWAIT(END_SWITCH_VALUE_START);
-     
       // Check alarm ==> setAlarm() in PID!
       if (getAlarmState() != 0) {
         // SOUND BUZZER
@@ -180,18 +173,22 @@ void controller()
       break;
     case wait: 
       MOTOR_CONTROL_setValue(0);
-//      Serial.println(CurrentPressurePatient);
       // Restart when 1) inhalation detected OR 2) timer passed
-      if (((millis() - exhaleStartTime) > comms_getRR()) && true){ // TODO: replace true by underpressure
+      if (((millis() - exhaleStartTime) > target_inhale_time)){// || CurrentPressurePatient < 0.2){ // TODO: replace true by underpressure
         controller_state = inhale;
-        new_time = millis();
+        // Get values for plotting
+        comms_setBPM(millis() - inhale_start_time);
+        //comms_setTRIG
+        
+        inhale_start_time = millis();
         start_time_pressure = millis();
         time_pressure_reached=0;
-      // load 'new' setting values for controller
+
+        // load 'new' setting values for controller
+        target_inhale_time = comms_getInhaleTime();
+        target_exhale_time = comms_getExhaleTime();
+        target_pressure = comms_getPK();
 //      BREATHE_CONTROL_setTIDALVolume(comms_getVT());
-//      BREATHE_CONTROL_setPEAKPressure(comms_getPK());
-//      BREATHE_CONTROL_setBreathingSensitivity(comms_getTS());
-//      BREATHE_CONTROL_setRespirationRatio(comms_getRR()); 
       }
       // Check user input to stop controller
       if (comms_getActive() == false) { 

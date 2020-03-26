@@ -58,6 +58,38 @@ int SDPSensor::init()
   return 0;
 }
 
+void SDPSensor::initcont(){
+  const uint8_t CMD_LEN = 2;
+  uint8_t cmd[CMD_LEN] = { 0x36, 0x1E };
+
+  if (I2CHelper::i2c_write(mI2CAddress, cmd, CMD_LEN) != 0) {
+    return 1;
+  }
+}
+
+int SDPSensor::readcont(){
+  const uint8_t DATA_LEN = 9;
+  uint8_t data[DATA_LEN] = { 0 };
+
+  if (I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN) != 0) {
+    return 1;
+  }
+
+  int16_t dp_raw   = (int16_t)data[0] << 8 | data[1];
+  int16_t temp_raw = (int16_t)data[3] << 8 | data[4];
+  int8_t dp_scale  = (int16_t)data[7] << 8 | data[7];
+
+  if (dp_raw != 0){
+    mDifferentialPressure = dp_raw / (float)dp_scale;
+    mTemperature = temp_raw / 200.0;
+  }
+  else{
+    return 1;
+  }
+
+  return 0;
+}
+
 int SDPSensor::readSample()
 {
   const uint8_t CMD_LEN = 2;
