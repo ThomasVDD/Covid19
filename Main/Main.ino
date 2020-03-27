@@ -12,6 +12,8 @@
 // VARIABLES
 //---------------------------------------------------------------
 
+
+
 unsigned long controllerTime = 10000; // us
 unsigned long Watchdog = 3000; // 3 seconds watchdog
 
@@ -85,7 +87,12 @@ void setup()
   MOTOR_CONTROL_setp();
 
   //-- set up communication with screen
-  if(BUTTONS) initCOMM();
+  if(BUTTONS){
+    pinMode(5, OUTPUT);
+    delay(200);
+    pinMode(5, INPUT);
+    initCOMM();
+  }
 
   //-- set up interrupt
   pinMode(13, OUTPUT);
@@ -141,8 +148,8 @@ void controller()
   noInterrupts();
   // update values 
   updateVolume(Flow2Patient);
-  comms_setVOL(Flow2Patient<0?0:Flow2Patient);
-  comms_setPRES(CurrentPressurePatient<0?0:CurrentPressurePatient);
+  comms_setVOL(getTotalVolumeInt());
+  comms_setPRES(CurrentPressurePatient);
   // read switches
   int END_SWITCH_VALUE_STOP = digitalRead(ENDSIWTCH_FULL_PIN); //inhale
   int END_SWITCH_VALUE_START = digitalRead(ENDSWITCH_PUSH_PIN);

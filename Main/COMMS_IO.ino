@@ -12,7 +12,7 @@ unsigned int VT = 700;
 // Tidal volume= target to deliver
 unsigned int PK = 50;
 //Peak pressure
-unsigned int TS = 0; // TODO
+int TS = 0; // TODO
 // Breath Trigger Sensitivity = amount the machine should look for
 float IE = 0.5;
 // Inspiration-expiration rate
@@ -65,7 +65,7 @@ unsigned int comms_getPK(){
   return PK;
 }
 
-unsigned int comms_getTS(){
+int comms_getTS(){
   return TS;
 }
 
@@ -94,23 +94,23 @@ unsigned int ALARM = 0;
 // send value * 10!!!
 unsigned int BPM = 10;
 // Breaths per minute
-unsigned int VOL = 20;
+int VOL = 20;
 // volume
 unsigned int TRIG = 30;
 // trigger
-unsigned int PRES = 40;
+int PRES = 40;
 // pressure
 
 void comms_setBPM(unsigned long bpm_time){
   BPM = 60000/(float)bpm_time;
 }
-void comms_setVOL(unsigned int vol){
+void comms_setVOL(int vol){
   VOL = vol;
 }
 void comms_setTRIG(unsigned int trig){
   TRIG = trig;
 }
-void comms_setPRES(unsigned int pres){
+void comms_setPRES(int pres){
   PRES = pres;
 }
 
@@ -140,11 +140,11 @@ void sendDataToPython(){
   Serial.print("BPM=");
   Serial.println(BPM*10);
   Serial.print("VOL=");
-  Serial.println(VOL*10);
+  Serial.println(VOL);
   Serial.print("TRIG=");
-  Serial.println(TRIG*10);
+  Serial.println(TRIG);
   Serial.print("PRES=");
-  Serial.println(PRES*10);
+  Serial.println(PRES);
 }
 
 void recvWithEndMarkerSer0() {
