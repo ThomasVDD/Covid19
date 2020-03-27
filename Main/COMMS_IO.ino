@@ -23,9 +23,23 @@ bool Mode = false; //false = Pressure // TODO
 bool ACTIVE = true;
 // active: start or stop
 
-unsigned int PKtresh = 10;
-unsigned int VTtresh = 10;
-unsigned int PPtresh = 5;
+unsigned int ADPK = 10;
+unsigned int ADVT = 10;
+unsigned int ADPP = 5;
+
+
+// init booleans for startup
+bool RRok = false;
+bool VTok = false;
+bool PKok = false;
+bool TSok = false;
+bool IEok = false;
+bool PPok = false;
+bool Modeok = false;
+bool Activeok = false;
+bool ADPKok = false;
+bool ADVTok = false;
+bool ADPPok = false;
 
 unsigned long comms_getInhaleTime(){
   float target_inhale_duration = 1000.0 * 60.0 * IE / RR  ;   
@@ -115,7 +129,6 @@ boolean newData0 = false;
 //---------------------------------------------------------------
 // FUNCTIONS PYTHON
 //---------------------------------------------------------------
-
 void processPython(String input){
   value0 = getvalue(input, '=', 1); 
   if (input.startsWith("ALARM")){
@@ -168,39 +181,66 @@ void recvWithEndMarkerSer0() {
 // FUNCTIONS IO
 //---------------------------------------------------------------
 
+bool initCOMM(){
+  while(!(RRok && VTok && PKok && TSok && IEok && PPok && Modeok && Activeok && ADPKok && ADVTok && ADPPok)){
+    recvWithEndMarkerSer1();
+  }
+  delay(20);
+  Serial1.println("OK");
+  delay(20);
+  Serial1.println("OK");
+  delay(20);
+  Serial1.println("OK");
+  return true;
+}
+
 void processSerialPort(String input){
   value1 = getvalue(input, '=', 1);
-  //Serial.println(value1);
-  
-  if (input.startsWith("PKtresh")){
-    PKtresh = value1.toInt(); // update value1
+  Serial.println(input);
+
+  if (input.startsWith("ACTIVE")){
+    ACTIVE = value1.toInt(); // update value1
+    Activeok = true;
   }
-  else if (input.startsWith("VTtresh")){
-    VTtresh = value1.toInt(); // update value1
+  if (input.startsWith("ADPK")){
+    ADPK = value1.toInt(); // update value1
+    ADPKok = true;
   }
-  else if (input.startsWith("PPtresh")){
-    PPtresh = value1.toInt(); // update value1
+  else if (input.startsWith("ADVT")){
+    ADVT = value1.toInt(); // update value1
+    ADVTok = true;
   }
-  else if (input.startsWith("Mode")){
+  else if (input.startsWith("ADPP")){
+    ADPP = value1.toInt(); // update value1
+    ADPPok = true;
+  }
+  else if (input.startsWith("MODE")){
     Mode = value1.toInt(); // update value1
+    Modeok = true;
   }
   else if (input.startsWith("PP")){
     PP = value1.toInt(); // update value1
+    PPok = true;
   }
   else if (input.startsWith("IE")){
     IE = value1.toFloat(); // update value
+    IEok = true;
   }
   else if (input.startsWith("TS")){
     TS = value1.toInt(); // update value1
+    TSok = true;
   }
   else if (input.startsWith("PK")){
     PK = value1.toInt(); // update value1
+    PKok = true;
   }
   else if (input.startsWith("VT")){
     VT = value1.toInt(); // update value1
+    VTok = true;
   }  
   else if (input.startsWith("RR")){
     RR = value1.toInt(); // update value1
+    RRok = true;
   }
 }
 
@@ -223,7 +263,7 @@ void recvWithEndMarkerSer1() {
        receivedChars1[ndx] = '\0'; // terminate the string
        ndx = 0;
        newData1 = true;
-       Serial.println(receivedChars1);
+//       Serial.println(receivedChars1);
      }
    }
 

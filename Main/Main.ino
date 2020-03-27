@@ -2,6 +2,8 @@
 
 // for debuggin purposes: allows to turn off features
 #define PYTHON 0
+#define HARDWARE 0
+#define BUTTONS 1
 
 #define ENDSIWTCH_FULL_PIN 3 //inhale
 #define ENDSWITCH_PUSH_PIN 2
@@ -51,6 +53,7 @@ void setup()
   }
   else {
     Serial.println("FLOW SENSOR Failed");
+    if(HARDWARE)while(1){};
   }
   setDeltaT(controllerTime);
   
@@ -61,6 +64,7 @@ void setup()
   }
   else{
     Serial.println("BME Failed");
+    if(HARDWARE)while(1){};
   }
 
   //-- set up hall sensor
@@ -70,6 +74,7 @@ void setup()
   }
   else {
     Serial.println("HALL SENSOR Failed");
+    if(HARDWARE)while(1){};
   }
 
   //-- set up limit switches
@@ -78,6 +83,9 @@ void setup()
 
   //-- set up motor
   MOTOR_CONTROL_setp();
+
+  //-- set up communication with screen
+  if(BUTTONS) initCOMM();
 
   //-- set up interrupt
   pinMode(13, OUTPUT);
@@ -105,16 +113,18 @@ void loop()
     // COMMUNICATE TO SCREEN
   }
 
+  // Watchdog for uart
+  doWatchdogIO();
+
   // Handle uart receive from display module
   recvWithEndMarkerSer1();
 
-  delay(200);
+  delay(20);
 
 //  Serial.println(angle);
 //  Serial.println(Flow2Patient);
 //  Serial.println(abs(getTotalVolumeInt()));
-//  Serial.println(CurrentPressurePatient);
-
+//  Serial.println(CurrentPressurePatient);    
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -126,15 +136,18 @@ void controller()
   // readout sensors
   interrupts();
   bool isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
-  updateVolume(Flow2Patient);
   bool isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
   bool isAngleOK = HALL_SENSOR_readHall(&angle);
+  noInterrupts();
+  // update values 
+  updateVolume(Flow2Patient);
   comms_setVOL(Flow2Patient<0?0:Flow2Patient);
   comms_setPRES(CurrentPressurePatient<0?0:CurrentPressurePatient);
-  noInterrupts();
+  // read switches
   int END_SWITCH_VALUE_STOP = digitalRead(ENDSIWTCH_FULL_PIN); //inhale
   int END_SWITCH_VALUE_START = digitalRead(ENDSWITCH_PUSH_PIN);
 
+  // State machine
   switch (controller_state) {
     case ini:{
       // Check user input to start controller
@@ -212,4 +225,8 @@ void doWatchdog(void) {
   }
   Serial.print("ALARM=");
   Serial.println(getAlarmState());
+}
+
+void doWatchdogIO(void){
+//  Serial1.println("A");
 }
